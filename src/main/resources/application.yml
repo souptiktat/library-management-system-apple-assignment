@@ -12,3 +12,13 @@ springdoc:
   api-docs:
     path: /v3/api-docs
   packages-to-scan: com.apple.library.controller
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

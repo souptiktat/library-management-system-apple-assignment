@@ -96,3 +96,9 @@ Production-grade exception handling
 
 Spring Boot 4 migrates to Spring Framework 7, and current Swagger/OpenAPI tooling is not yet binary compatible.
 To avoid unstable runtime behavior, I kept OpenAPI annotations and disabled Swagger UI until official support is released.
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+
+kubectl create secret tls library-tls \
+--cert=cert.pem \
+--key=key.pem

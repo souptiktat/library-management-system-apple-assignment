@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: library-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: library.apple-demo.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: library-service
+                port:
+                  number: 80
+
+#  tls:
+#    - hosts:
+#        - library.apple-demo.com
+#      secretName: library-tls
