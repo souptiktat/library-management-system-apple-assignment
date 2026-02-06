@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -24,68 +25,41 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = GlobalExceptionHandlerTest.TestController.class)
+@WebMvcTest(controllers = TestExceptionController.class)
 @Import(GlobalExceptionHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
 class GlobalExceptionHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    // ---------- 404 NOT FOUND ----------
-
     @Test
-    @WithMockUser
-    @DisplayName("Should return 404 when ResourceNotFoundException is thrown")
-    @Disabled
-    void shouldHandleResourceNotFoundException() throws Exception {
+    void shouldReturn404_whenResourceNotFound() throws Exception {
         mockMvc.perform(get("/test/not-found"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.message").value("Book not found"))
-                .andExpect(jsonPath("$.errors").doesNotExist());
+                .andExpect(jsonPath("$.error").value("Book not found"))
+                .andExpect(jsonPath("$.details").isEmpty());
     }
-
-    // ---------- 400 VALIDATION ERROR ----------
 
     @Test
-    @WithMockUser
-    @DisplayName("Should return validation error response")
-    @Disabled
-    void shouldHandleValidationException() throws Exception {
+    void shouldReturn400_whenValidationFails() throws Exception {
         mockMvc.perform(post("/test/validation")
-                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "name": ""
-                                }
-                                """))
+                        .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.message").value("Validation failed"))
-                .andExpect(jsonPath("$.errors", hasSize(1)))
-                .andExpect(jsonPath("$.errors[0]", containsString("name")));
+                .andExpect(jsonPath("$.error").value("Validation failed"))
+                .andExpect(jsonPath("$.details").isArray())
+                .andExpect(jsonPath("$.details[0]").value("title: title is mandatory"));
     }
 
-    // --------------------------------------------------
-    // Test Controller
-    // --------------------------------------------------
-
-    @RestController
-    static class TestController {
-
-        @GetMapping("/test/not-found")
-        void notFound() {
-            throw new ResourceNotFoundException("Book not found");
-        }
-
-        @PostMapping("/test/validation")
-        void validate(@Valid @RequestBody TestRequest request) {
-        }
-    }
-
-    static class TestRequest {
-        @NotBlank
-        public String name;
+    @Test
+    void shouldReturn409_whenDuplicateResource() throws Exception {
+        mockMvc.perform(get("/test/duplicate"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Duplicate book"))
+                .andExpect(jsonPath("$.details").isEmpty());
     }
 }
